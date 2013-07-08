@@ -4,13 +4,10 @@
         ring.adapter.jetty))
 
 (defn handler [request]
-  (if-let [xri (get-in request [:headers "x-real-ip"])]
-    (response {:ip xri})
-    (if-let [xra (get-in request [:headers "x-remote-addr"])]
-      (response {:ip xra})
-      (if-let [xff (get-in request [:headers "x-forwarded-for"])]
-        (response {:ip xff})
-        (response {:ip (:remote-addr request)})))))
+  (if-let [ip (or (get-in request [:headers "x-cluster-client-ip"]) (get-in request [:headers "x-real-ip"]) (get-in request [:headers "x-remote-addr"]) (get-in request [:headers "x-forwarded-for"]))]
+    (response {:ip ip})
+    (response {:headers (get request :headers) :ip (:remote-addr request)})
+  ))
 
 (def app
   (wrap-json-response handler))
